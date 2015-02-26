@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title></title>
+		<style type="text/css">
+			table,tr,td{margin: 0; padding: 0; border: none;}
+			table tr td{border: solid 1px #666; width: 10px; height: 10px;}
+			.mSnake{background-color: #666666;}
+			.mBean{background-color: #666666;}
+		</style>
+		<script src="js/jquery-1.9.1.js" type="text/javascript" charset="utf-8"></script>
+		<script type="text/javascript">
+			$(function(){
+				window.wxc = window.wxc || {};
+				var snake = window.wxc.snake = Snake,
+					cellsRowCount = window.wxc.cellsRowCount = 30;
+				
+				//蛇头方向——枚举
+				window.wxc.snake.directionEnum = {
+					up: parseInt("0001",2),
+					right: parseInt("0010",2),
+					down: parseInt("0100",2),
+					left: parseInt("1000",2)
+				}
+				
+				initGame();
+				
+				function initGame(){
+					drawTable();
+					window.wxc.mSnake = new window.wxc.snake();
+					generateBean();
+				}
+				
+				/*蛇Object start*/
+				function Snake(config){
+					var direEnum = window.wxc.snake.directionEnum;
+					var snakeProp = $.extend(true, {
+						snakeName: "xcSnake_" + new Date().getTime(),
+						styleName: "mSnake",
+						headPosition: "5,3",
+						direction: direEnum.right,
+						moveUp: function(){
+							
+						},
+						moveDown: function(){
+							
+						},
+						moveLeft: function(){
+							
+						},
+						moveRight: function(){
+							
+						}
+					}, config);
+					
+					if(window.wxc.snake["snakeName"] !== undefined ){ console.log("小蛇被覆盖啦");}
+					
+					var _this = this;
+					
+					//蛇头初始坐标
+					var headpos = snakeProp.headPosition.split(",");
+					//蛇节点数组
+					var snakeNodeArr = [],
+						//蛇头节点初始对象,蛇运动后仅
+						snakeHeadNodeObj = {
+							posX: parseInt(headpos[0]),
+							posY: parseInt(headpos[1]),
+							prevNode: {posX: parseInt(headpos[0]) + 1, posY: parseInt(headpos[1])},
+							direction: direEnum.right
+						},
+						//蛇初始长度
+						initLength = 3,
+						//蛇的移动针指针
+						movePointer = null;
+
+					init();
+					
+					_this.start = start;
+					_this.pause = pause;
+					_this.moveUp = moveUp;
+					_this.moveRight = moveRight;
+					_this.moveDown = moveDown;
+					_this.moveLeft = moveLeft;
+					_this.getSnakeNodeArr = getSnakeNodeArr;
+					
+					function init(){
+						bind();
+						creatSnake();
+						setSnake();
+					}
+					
+					function bind(){
+						$(window).bind("keydown", function(ev){
+							switch (ev.keyCode){
+								case 37:
+									moveLeft();
+									break;
+								case 38:
+									moveUp();
+									break;
+								case 39:
+									moveRight();
+									break;
+								case 40:
+									moveDown();
+									break;
+								default:
+									break;
+							}
+						});
+					}
+					
+					//让蛇开始移动
+					function start(){
+						moveStep();
+						movePointer = setInterval(moveStep, 500);
+						console.log(snakeNodeArr);
+					}
+					
+					//蛇前行代码
+					function moveStep(){	
+						if(isGameOver()){pause(); alert("你挂啦！")}
+						var hadEat = $("#cell_" + snakeNodeArr[0].prevNode.posX + "_" + snakeNodeArr[0].prevNode.posY).hasClass("mBean");                                
+						if(hadEat){
+							snakeNodeArr.push({
+								prevNode: {
+									posX: snakeNodeArr[snakeNodeArr.length - 1].posX,
+									posY:  snakeNodeArr[snakeNodeArr.length - 1].posY
+								}
+							});
+							console.log(snakeNodeArr);
+						}
+						for(var i = snakeNodeArr.length - 1; i > 0; i--){
+							snakeNodeArr[i].posX = snakeNodeArr[i].prevNode["posX"];
+							snakeNodeArr[i].posY = snakeNodeArr[i].prevNode["posY"];		
+							snakeNodeArr[i].prevNode = snakeNodeArr[i - 1].prevNode;	
+						}
+						snakeNodeArr[i].posX = snakeNodeArr[i].prevNode["posX"];
+						snakeNodeArr[i].posY = snakeNodeArr[i].prevNode["posY"];	
+						switch (snakeHeadNodeObj.direction){
+							case direEnum.up:
+								snakeNodeArr[i].prevNode = {
+									posX: snakeNodeArr[i].posX,
+									posY: parseInt(snakeNodeArr[i].posY) - 1
+								}
+								break;
+							case direEnum.right:
+								snakeNodeArr[i].prevNode = {
+									posX: parseInt(snakeNodeArr[i].posX) + 1,
+									posY: parseInt(snakeNodeArr[i].posY)
+								}
+								break;
+							case direEnum.down:
+								snakeNodeArr[i].prevNode = {
+									posX: snakeNodeArr[i].posX,
+									posY: parseInt(snakeNodeArr[i].posY) + 1
+								}
+								break;
+							case direEnum.left:
+								snakeNodeArr[i].prevNode = {
+									posX: parseInt(snakeNodeArr[i].posX) - 1,
+									posY: snakeNodeArr[i].posY
+								}
+								break;
+							default:
+								console.log("X蛇运动方向异常，未知的运动方向X");
+								break;
+						}
+						
+						clearTable();
+						if(hadEat){ regenerateBean(); }
+						setSnake();	
+					}
+					
+					//暂停游戏
+					function pause(){
+						window.clearInterval(movePointer);
+					}
+					
+					//调整方向后的重新开始移动
+					function restart(){
+						_this.pause();
+						_this.start();
+					}
+					
+					//让蛇头朝向上
+					function moveUp(){
+						if( snakeHeadNodeObj.direction !== direEnum.down ){
+							snakeHeadNodeObj.direction = direEnum.up;
+							restart();
+						}
+					}
+					
+					//让蛇头朝向右
+					function moveRight(){
+						if( snakeHeadNodeObj.direction !== direEnum.left ){
+							snakeHeadNodeObj.direction = direEnum.right;
+						}
+						restart();
+					}
+					
+					//让蛇头朝向下
+					function moveDown(){
+						if( snakeHeadNodeObj.direction !== direEnum.up ){
+							snakeHeadNodeObj.direction = direEnum.down;
+						}						
+						restart();
+					}
+					
+					//让蛇头朝向左
+					function moveLeft(){
+						if( snakeHeadNodeObj.direction !== direEnum.right ){
+							snakeHeadNodeObj.direction = direEnum.left;
+						}
+						restart();
+					}
+					
+					//创建蛇结构
+					function creatSnake(){
+						//默认初始化蛇运动方向向右，因此蛇头节点的前结点为蛇头紧邻右结点的坐标
+						var temp_prevNode = snakeHeadNodeObj.prevNode;
+						for(var i = 0; i < initLength; i++){							
+							snakeNodeArr.push({
+								posX: snakeHeadNodeObj.posX - i,
+								posY: snakeHeadNodeObj.posY,
+								prevNode: temp_prevNode
+							});
+							temp_prevNode = {posX: snakeHeadNodeObj.posX - i, posY: snakeHeadNodeObj.posY};
+						}
+						//创建蛇结点数组成功后，蛇头结点仅保留运动方向以便控制蛇转弯，其余字段为避免产生歧义，因此废弃
+						snakeHeadNodeObj = {
+							direction: snakeHeadNodeObj.direction
+						}
+					}
+					
+					//渲染蛇dom
+					function setSnake(){
+						console.log("蛇身数组: ", snakeNodeArr);
+						$.each(snakeNodeArr, function(i,o) {    
+							var x = o.posX,
+								y = o.posY;
+							$("#cell_" + x + "_" + y).addClass(snakeProp.styleName);               
+						});
+					}	
+					
+					//清空游戏中的蛇
+					function clearTable(){
+						$("." + snakeProp.styleName).removeClass(snakeProp.styleName);
+					}
+					
+					//获取蛇身数组副本
+					function getSnakeNodeArr(){
+						return snakeNodeArr.slice(0);
+					}
+					
+					//蛇身碰撞及出界检测
+					function isGameOver(){
+						var snkNodeArr = window.wxc.mSnake.getSnakeNodeArr(),
+							temp_snkNodeObj = {posX: null, posY: null},
+							isGMOV = false;
+
+						//遍历蛇身检测越界
+						$.each(snkNodeArr, function(i, o) {    
+							if(o.posX  > cellsRowCount || o.posX < 1 || o.posY > cellsRowCount || o.posY < 1){
+								isGMOV = true;
+								console.log("GAME OVER");
+								return;
+							}
+						});
+						
+						//遍历蛇身检测碰撞
+						for( var i = 0; i < snkNodeArr.length; i++){
+							if(isGMOV){ break; }
+							temp_snkNodeObj = snkNodeArr.shift();
+							$.each(snkNodeArr, function(i, o){
+								if(temp_snkNodeObj.posX == o.posX && temp_snkNodeObj.posY == o.posY){
+									isGMOV = true;
+									console.log("GAME OVER");
+									return;
+								}
+							})
+						}
+						
+						return isGMOV;
+					}
+				}
+				/*蛇Object end*/
+				
+				//重新生成豆豆
+				function regenerateBean(){
+					$(".mBean").removeClass("mBean");
+					generateBean();
+				}
+				
+				//生成豆豆
+				function generateBean(){
+					var $pointArea = $("td[class='cell']"),
+						Range = $pointArea.length - 1,
+						Rand = Math.random(),
+						beanIndex = Math.round(Rand * Range);
+					$($pointArea[beanIndex]).addClass("mBean");
+				}
+				
+				//绘制游戏盘子
+				function drawTable(){
+					var $root = $("body"),
+						$table = $("<table>").attr("cellspacing", 0),
+						$tr = $("<tr>"),
+						$td = $("<td>"),
+						cell_number = cellsRowCount;
+					
+					for(var i = 1; i <= cell_number; i++){
+						$tr = $("<tr>");
+						for(var j = 1; j <= cell_number; j++){
+							$tr.append(
+								$("<td>").addClass("cell").attr("id","cell_" + j + "_" + i).bind("click", function(){
+									var posArr = $(this).attr("id").split("_");
+									alert("x:" + posArr[1] + " y:" + posArr[2]);
+								})
+							);
+						}
+						$table.append($tr);
+					}
+					$root.append($table);
+				}
+							
+			})
+		</script>
+	</head>
+	<body>
+		
+	</body>
+</html>
