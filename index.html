@@ -5,7 +5,7 @@
 		<title></title>
 		<style type="text/css">
 			table,tr,td{margin: 0; padding: 0; border: none;}
-			table tr td{border: solid 1px #666; width: 10px; height: 10px;}
+			table tr td{border: solid 1px #666; width: 15px; height: 15px;}
 			.mSnake{background-color: #666666;}
 			.mBean{background-color: #666666;}
 		</style>
@@ -14,7 +14,7 @@
 			$(function(){
 				window.wxc = window.wxc || {};
 				var snake = window.wxc.snake = Snake,
-					cellsRowCount = window.wxc.cellsRowCount = 30;
+					cellsRowCount = window.wxc.cellsRowCount = 20;
 				
 				//蛇头方向——枚举
 				window.wxc.snake.directionEnum = {
@@ -39,7 +39,7 @@
 						snakeName: "xcSnake_" + new Date().getTime(),
 						styleName: "mSnake",
 						headPosition: "5,3",
-						direction: direEnum.right,
+						speed: 1,
 						moveUp: function(){
 							
 						},
@@ -59,9 +59,9 @@
 					var _this = this;
 					
 					//蛇头初始坐标
-					var headpos = snakeProp.headPosition.split(",");
-					//蛇节点数组
-					var snakeNodeArr = [],
+					var headpos = snakeProp.headPosition.split(","),
+						//蛇节点数组
+						snakeNodeArr = [],
 						//蛇头节点初始对象,蛇运动后仅
 						snakeHeadNodeObj = {
 							posX: parseInt(headpos[0]),
@@ -121,7 +121,38 @@
 					//蛇前行代码
 					function moveStep(){	
 						if(isGameOver()){pause(); alert("你挂啦！")}
-						var hadEat = $("#cell_" + snakeNodeArr[0].prevNode.posX + "_" + snakeNodeArr[0].prevNode.posY).hasClass("mBean");                                
+						var hadEat = $("#cell_" + snakeNodeArr[0].prevNode.posX + "_" + snakeNodeArr[0].prevNode.posY).hasClass("mBean");                                						
+						
+						switch (snakeHeadNodeObj.direction){
+							case direEnum.up:
+								snakeNodeArr[0].prevNode = {
+									posX: snakeNodeArr[0].posX,
+									posY: parseInt(snakeNodeArr[0].posY) - 1
+								}
+								break;
+							case direEnum.right:
+								snakeNodeArr[0].prevNode = {
+									posX: parseInt(snakeNodeArr[0].posX) + 1,
+									posY: parseInt(snakeNodeArr[0].posY)
+								}
+								break;
+							case direEnum.down:
+								snakeNodeArr[0].prevNode = {
+									posX: snakeNodeArr[0].posX,
+									posY: parseInt(snakeNodeArr[0].posY) + 1
+								}
+								break;
+							case direEnum.left:
+								snakeNodeArr[0].prevNode = {
+									posX: parseInt(snakeNodeArr[0].posX) - 1,
+									posY: snakeNodeArr[0].posY
+								}
+								break;
+							default:
+								console.log("X蛇运动方向异常，未知的运动方向X");
+								break;
+						}
+						
 						if(hadEat){
 							snakeNodeArr.push({
 								prevNode: {
@@ -131,6 +162,7 @@
 							});
 							console.log(snakeNodeArr);
 						}
+						
 						for(var i = snakeNodeArr.length - 1; i > 0; i--){
 							snakeNodeArr[i].posX = snakeNodeArr[i].prevNode["posX"];
 							snakeNodeArr[i].posY = snakeNodeArr[i].prevNode["posY"];		
@@ -138,35 +170,6 @@
 						}
 						snakeNodeArr[i].posX = snakeNodeArr[i].prevNode["posX"];
 						snakeNodeArr[i].posY = snakeNodeArr[i].prevNode["posY"];	
-						switch (snakeHeadNodeObj.direction){
-							case direEnum.up:
-								snakeNodeArr[i].prevNode = {
-									posX: snakeNodeArr[i].posX,
-									posY: parseInt(snakeNodeArr[i].posY) - 1
-								}
-								break;
-							case direEnum.right:
-								snakeNodeArr[i].prevNode = {
-									posX: parseInt(snakeNodeArr[i].posX) + 1,
-									posY: parseInt(snakeNodeArr[i].posY)
-								}
-								break;
-							case direEnum.down:
-								snakeNodeArr[i].prevNode = {
-									posX: snakeNodeArr[i].posX,
-									posY: parseInt(snakeNodeArr[i].posY) + 1
-								}
-								break;
-							case direEnum.left:
-								snakeNodeArr[i].prevNode = {
-									posX: parseInt(snakeNodeArr[i].posX) - 1,
-									posY: snakeNodeArr[i].posY
-								}
-								break;
-							default:
-								console.log("X蛇运动方向异常，未知的运动方向X");
-								break;
-						}
 						
 						clearTable();
 						if(hadEat){ regenerateBean(); }
@@ -180,8 +183,8 @@
 					
 					//调整方向后的重新开始移动
 					function restart(){
-						_this.pause();
-						_this.start();
+						pause();
+						start();
 					}
 					
 					//让蛇头朝向上
@@ -305,7 +308,7 @@
 				//绘制游戏盘子
 				function drawTable(){
 					var $root = $("body"),
-						$table = $("<table>").attr("cellspacing", 0),
+						$table = $("<table>").attr({"cellspacing": 1}),
 						$tr = $("<tr>"),
 						$td = $("<td>"),
 						cell_number = cellsRowCount;
